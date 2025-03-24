@@ -4,7 +4,8 @@
   "description": "",
   "main": "handler.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node localTest.js"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +20,8 @@
     "@opentelemetry/resources": "^1.18.1",
     "@opentelemetry/sdk-node": "^0.46.0",
     "@opentelemetry/sdk-trace-base": "^1.18.1",
-    "@opentelemetry/semantic-conventions": "^1.18.1"
+    "@opentelemetry/semantic-conventions": "^1.18.1",
+    "aws-sdk": "^2.1518.0",
+    "dotenv": "^16.3.1"
   }
 }
