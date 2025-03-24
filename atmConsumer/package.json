@@ -1,24 +1,27 @@
 {
-  "name": "atm-producer",
+  "name": "atm-consumer",
   "version": "1.0.0",
   "description": "",
   "main": "handler.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node localTest.js",
+    "start:approved": "node localTest.js approved",
+    "start:ny": "node localTest.js ny",
+    "start:unapproved": "node localTest.js unapproved"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@opentelemetry/api": "^1.7.0",
     "@opentelemetry/auto-instrumentations-node": "^0.40.3",
     "@opentelemetry/core": "^1.18.1",
     "@opentelemetry/exporter-trace-otlp-http": "^0.46.0",
     "@opentelemetry/instrumentation": "^0.46.0",
-    "@opentelemetry/instrumentation-aws-sdk": "^0.36.0",
     "@opentelemetry/resources": "^1.18.1",
     "@opentelemetry/sdk-node": "^0.46.0",
     "@opentelemetry/sdk-trace-base": "^1.18.1",
-    "@opentelemetry/semantic-conventions": "^1.18.1"
-  }
-}
+    "@opentelemetry/semantic-conventions": "^1.18.1",
+    "dotenv": "^16.3.1"
+  },
+  "author": "",
+  "license": "ISC"
+} 

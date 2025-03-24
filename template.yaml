@@ -1,10 +1,24 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: myATMapp
+Description: myATMapp with OpenTelemetry Instrumentation for Honeycomb.io
+
+Parameters:
+  HoneycombApiKey:
+    Type: String
+    Description: Honeycomb API Key for sending telemetry data
+    NoEcho: true
+  HoneycombDataset:
+    Type: String
+    Description: Honeycomb Dataset name for organizing telemetry data
+    Default: atm-events
 
 Globals:
   Function:
     Timeout: 3
+    Environment:
+      Variables:
+        HONEYCOMB_API_KEY: !Ref HoneycombApiKey
+        HONEYCOMB_DATASET: !Ref HoneycombDataset
 
 Resources:
   atmProducerFn:
@@ -19,6 +33,13 @@ Resources:
             Resource: '*'
             Action:
               - events:PutEvents
+      Tracing: Active # Enable X-Ray tracing for additional context
+      Environment:
+        Variables:
+          OTEL_SERVICE_NAME: atm-producer
+          NODE_OPTIONS: --require ./tracing.js
+          # Use AWS X-Ray ID Generator to link X-Ray and OTel traces
+          OTEL_PROPAGATORS: xray,tracecontext,baggage
 
   atmConsumerCase1Fn:
     Type: AWS::Serverless::Function
@@ -26,6 +47,12 @@ Resources:
       CodeUri: atmConsumer/
       Handler: handler.case1Handler
       Runtime: nodejs18.x
+      Tracing: Active # Enable X-Ray tracing for additional context
+      Environment:
+        Variables:
+          OTEL_SERVICE_NAME: atm-consumer-approved
+          NODE_OPTIONS: --require ./tracing.js
+          OTEL_PROPAGATORS: xray,tracecontext,baggage
 
   atmConsumerCase2Fn:
     Type: AWS::Serverless::Function
@@ -33,6 +60,12 @@ Resources:
       CodeUri: atmConsumer/
       Handler: handler.case2Handler
       Runtime: nodejs18.x
+      Tracing: Active # Enable X-Ray tracing for additional context
+      Environment:
+        Variables:
+          OTEL_SERVICE_NAME: atm-consumer-ny
+          NODE_OPTIONS: --require ./tracing.js
+          OTEL_PROPAGATORS: xray,tracecontext,baggage
       Events:
         Trigger:
           Type: CloudWatchEvent
@@ -52,6 +85,12 @@ Resources:
       CodeUri: atmConsumer/
       Handler: handler.case3Handler
       Runtime: nodejs18.x
+      Tracing: Active # Enable X-Ray tracing for additional context
+      Environment:
+        Variables:
+          OTEL_SERVICE_NAME: atm-consumer-unapproved
+          NODE_OPTIONS: --require ./tracing.js
+          OTEL_PROPAGATORS: xray,tracecontext,baggage
       Events:
         Trigger:
           Type: CloudWatchEvent
@@ -97,3 +136,17 @@ Resources:
         Fn::GetAtt:
           - "EventRuleCase1"
           - "Arn"
+
+Outputs:
+  ProducerFunction:
+    Description: "Producer Lambda Function ARN"
+    Value: !GetAtt atmProducerFn.Arn
+  ConsumerApprovedFunction:
+    Description: "Consumer for Approved Transactions Lambda Function ARN"
+    Value: !GetAtt atmConsumerCase1Fn.Arn
+  ConsumerNYFunction:
+    Description: "Consumer for NY Transactions Lambda Function ARN"
+    Value: !GetAtt atmConsumerCase2Fn.Arn
+  ConsumerUnapprovedFunction:
+    Description: "Consumer for Unapproved Transactions Lambda Function ARN"
+    Value: !GetAtt atmConsumerCase3Fn.Arn

@@ -13,9 +13,58 @@
   SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-// A simple wrapper for running the Lambda handler locally.
+// Initialize OpenTelemetry before importing handler
+require('./tracing');
 
-const main = async function() {
-  await require('./handler').lambdaHandler()
+// Load environment variables from .env file if exists
+try {
+  require('dotenv').config();
+} catch (e) {
+  // .env file doesn't exist or dotenv not installed - using environment variables directly
+  console.log('dotenv not loaded, make sure HONEYCOMB_API_KEY is set in the environment');
 }
-main()
+
+// This is a local wrapper - for local testing only
+// It emulates the Lambda environment by creating a context object and calling the handler
+// with the event
+
+const { lambdaHandler } = require('./handler');
+
+// Check for the Honeycomb API key
+if (!process.env.HONEYCOMB_API_KEY) {
+  console.error('Error: HONEYCOMB_API_KEY environment variable is required');
+  console.error('Please set it in your environment or create a .env file with this variable');
+  process.exit(1);
+}
+
+const context = {
+  awsRequestId: '12345-request',
+  functionName: 'atmProducer-local',
+  functionVersion: 'local',
+  invokedFunctionArn: 'arn:aws:lambda:us-east-1:123456789012:function:atmProducer-local',
+  getRemainingTimeInMillis: () => 30000,
+  // These three are deprecated in Node 18
+  callbackWaitsForEmptyEventLoop: true,
+  logGroupName: '/aws/lambda/atmProducer-local',
+  logStreamName: '2021/01/01/[$LATEST]12345'
+};
+
+// Call the handler and handle the promise
+console.log('Starting local test with OpenTelemetry instrumentation...');
+console.log(`Sending traces to Honeycomb dataset: ${process.env.HONEYCOMB_DATASET || 'atm-events'}`);
+
+lambdaHandler({}, context)
+  .then(result => {
+    console.log('Lambda executed successfully');
+    console.log(result);
+    // Allow time for traces to be exported
+    setTimeout(() => {
+      console.log('Exiting after waiting for trace export');
+      process.exit(0);
+    }, 2000);
+  })
+  .catch(err => {
+    console.error('Lambda execution failed');
+    console.error(err);
+    process.exit(1);
+  });
